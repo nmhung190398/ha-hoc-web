@@ -1,0 +1,232 @@
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./pagination.css" />
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+      integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+      crossorigin="anonymous"
+    ></script>
+    <script src="./pagination.min.js"></script>
+    <script src="./format-string.js"></script>
+  </head>
+
+  <body style="width: 1200px; border: 1px solid #000000" class="session m-auto">
+    <div class="row">
+      <div class="col-12" style="height: 200px">
+        <button id="btnAdd" class="btn btn-primary btn-sm" onclick="add()">
+          Add
+        </button>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="body-table">
+            <tr>
+              <td>{{id}}</td>
+              <td>{{name}}</td>
+              <td>{{age}}</td>
+              <td>{{genderToString()}}</td>
+              <td>
+                <button
+                  class="btn btn-danger btn-sm"
+                  onclick="delItem(this)"
+                  del_id="{{id}}"
+                >
+                  Del
+                </button>
+                <button
+                  class="btn btn-info btn-sm"
+                  onclick="edit(this)"
+                  edit_id="{{id}}"
+                >
+                  Edit
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div id="paginate"></div>
+
+        <div class="modal" tabindex="-1" role="dialog" id="createItem">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Create user</h5>
+                <button
+                  type="button"
+                  class="close"
+                  data-dismiss="modal"
+                  aria-label="Close"
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form action="" id="createForm">
+                  <input type="hidden" name="id" value="{{id ?? ''}}" />
+                  <div>
+                    <label for="" class="col-label label">Name</label>
+                    <input
+                      name="name"
+                      class="form-control"
+                      value="{{name ??  ''}}"
+                    />
+                  </div>
+                  <div>
+                    <label for="" class="col-label label">Age</label>
+                    <input
+                      type="number"
+                      name="age"
+                      class="form-control"
+                      value="{{age ?? ''}}"
+                    />
+                  </div>
+                  <div>
+                    <label for="" class="col-label label">Gender</label>
+                    {{renderGender()}}
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="saveBtn">
+                  Save
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-dismiss="modal"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./script.js"></script>
+    <script>
+      let itemSave = {};
+      let perPage = 100000;
+      let page = 0;
+      const template = $("#body-table").html();
+      const modalData = $("#createForm").html();
+      //init default pagination
+      // $("#paginate").pagination({
+      //   dataSource: [],
+      // });
+
+      const renderData = async () => {
+        const paginateData = await getData({
+          perPage,
+          page,
+        });
+
+        //create ul li paginate
+
+        //add data in html
+        let tableBody = $("#body-table");
+        tableBody.html(
+          paginateData.items.reduce((preValue, currValue) => {
+            currValue.genderToString = function () {
+              return currValue.gender == 1 ? "male" : "female";
+            };
+            return preValue + template.format(currValue);
+          }, "")
+        );
+      };
+
+      renderData();
+
+      const delItem = (item) => {
+        console.log($(item));
+        const id = item.getAttribute("del_id");
+        data = data.filter((datum) => {
+          return datum.id != id;
+        });
+        renderData();
+      };
+      const add = () => {
+        itemSave = {
+          id: null,
+          name: "",
+          age: 0,
+          gender: GENDER.MALE,
+        };
+        showModalSave();
+      };
+      const edit = (btn) => {
+        const id = btn.getAttribute("edit_id");
+        itemSave = data.find((datum) => {
+          return datum.id == id;
+        });
+        showModalSave();
+      };
+
+      const showModalSave = () => {
+        itemSave.renderGender = () => {
+          return Object.keys(GENDER).reduce((preValue, currValue) => {
+            const tmp = ` <input type="radio" value="${
+              GENDER[currValue]
+            }" name="gender" ${
+              itemSave.gender == GENDER[currValue] ? "checked" : ""
+            }/>${currValue}`;
+            return preValue + tmp;
+          }, "");
+          return tmp;
+        };
+
+        console.log(modalData.format(itemSave));
+        $("#createForm").html(modalData.format(itemSave));
+        $("#createItem").modal("show");
+      };
+
+      $("#saveBtn").on("click", async function () {
+        let newData = $("#createForm").serializeArray();
+        console.log(newData);
+        item = {
+          id: itemSave.id,
+        };
+        newData.forEach((el) => {
+          item[el.name] = el.value;
+        });
+        if (item.id) {
+        } else {
+          await addStudent(item);
+        }
+
+        $("#createItem").modal("hide");
+        renderData();
+      });
+    </script>
+  </body>
+</html>
